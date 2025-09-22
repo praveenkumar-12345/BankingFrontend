@@ -1,3 +1,4 @@
+// fixeddeposit.js
 
 // Sample Fixed Deposit data
 const fixedDeposits = [
@@ -53,11 +54,12 @@ const fixedDeposits = [
 
 
 let registrationEntryDate = null;
+let authToken = null; // store JWT token here
 
 function toggleRegisterForm() {
     const form = document.getElementById('registerForm');
     form.classList.toggle('hidden');
-    
+
     if (!form.classList.contains('hidden')) {
         // Set current date as default for start date
         document.getElementById('startDate').valueAsDate = new Date();
@@ -96,11 +98,8 @@ function clearErrors() {
     document.getElementById("tenureError").textContent = "";
 }
 
-let authToken = null; // store JWT token here
-
 function loginUser() {
     const loginData = {
-        fullname: "Praveen",
         email: "praveen.kumar@gmail.com",
         password: "securePassword123"
     };
@@ -129,6 +128,11 @@ function loginUser() {
 function submitRegistration() {
     clearErrors();
 
+    if (!authToken) {
+        alert("❌ Please login first!");
+        return;
+    }
+
     const accountId = document.getElementById('accountId').value;
     const depositAmount = parseFloat(document.getElementById('depositAmount').value);
     const interestRate = parseFloat(document.getElementById('interestRate').value);
@@ -153,11 +157,6 @@ function submitRegistration() {
         isValid = false;
     }
     if (!isValid) return;
-
-    if (!authToken) {
-        alert("❌ Please login first!");
-        return;
-    }
 
     // Build FD request
     const fdRequest = {
@@ -204,7 +203,7 @@ function submitRegistration() {
 function updateCalendarConstraints() {
     const entryDate = document.getElementById('entryDate').value;
     registrationEntryDate = entryDate;
-    
+
     // Update all calendar inputs in the FD list
     const calendarInputs = document.querySelectorAll('.calendar-input');
     calendarInputs.forEach(input => {
@@ -232,7 +231,6 @@ function showAllFixedDeposits() {
     fdList.innerHTML = '';
 
     const entryDate = document.getElementById('entryDate').value;
-    console.log("entrydate=", entryDate);
     if (!entryDate) {
         alert("Please select a date first!");
         return;
@@ -295,7 +293,7 @@ function showAllFixedDeposits() {
                     </div>
                     <div class="fd-actions">
                         <input type="date" class="calendar-input" min="${minDate}" placeholder="Select withdrawal date">
-                        <button class="withdraw-btn" onclick="initiateWithdrawal(${fd.fdId}, ${fd.maturityAmount}, ${index})">Withdraw</button>
+                        ${fd.status !== 'PREMATURE_CLOSURE' ? `<button class="withdraw-btn" onclick="initiateWithdrawal(${fd.fdId}, ${fd.maturityAmount}, ${index})">Withdraw</button>` : ''}
                     </div>
                 `;
                 fdList.appendChild(fdItem);
@@ -316,7 +314,6 @@ function initiateWithdrawal(fdId, maturityAmount, index) {
     const fdItem = document.querySelector(`.fd-item[data-fd-index='${index}']`);
     const withdrawalDateInput = fdItem.querySelector('.calendar-input');
     const selectedDate = withdrawalDateInput.value;
-    console.log("date=",selectedDate);
     if (!selectedDate) {
         alert("Please select a withdrawal date first!");
         return;
@@ -368,8 +365,6 @@ function confirmWithdrawal() {
     })
     .then(res => res.text())
     .then(message => {
-        // Extract credited amount from backend messag
-
         // Refresh FD list from backend to update status
         showAllFixedDeposits();
         // Wait a bit for FD list to render, then show success message
@@ -422,14 +417,8 @@ function calculateMaturity() {
     const depositAmount = parseFloat(document.getElementById('calcDepositAmount').value);
     const interestRate = parseFloat(document.getElementById('calcInterestRate').value);
     const tenure = parseInt(document.getElementById('calcTenure').value);
-    const n=4;
 
     // Validate inputs
-    if (!depositAmount || !interestRate || !tenure) {
-        alert('Please fill all fields');
-        return;
-    }
-
     if (isNaN(depositAmount) || depositAmount <= 0) {
         alert('Please enter a valid deposit amount');
         return;
@@ -444,13 +433,28 @@ function calculateMaturity() {
         alert('Please enter a valid tenure');
         return;
     }
-    const years = tenure / 12.0;
-    // Calculate maturity amount using compound interest
-    const maturityAmount = depositAmount * Math.pow(1 + (interestRate / (n * 100)), n * years);
 
-    // Show result
-    document.getElementById('maturityAmountResult').textContent = formatCurrency(maturityAmount);
-    document.getElementById('calculatorResult').classList.remove('hidden');
+    // Call backend API
+    fetch(`http://localhost:8080/users/FixedDeposit/calculatematurity?depositAmount=${depositAmount}&interestRate=${interestRate}&tenureMonths=${tenure}`,{
+        method: "GET",
+        headers: {
+            "Authorization": "Bearer " + authToken
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Failed to calculate maturity");
+        }
+        return response.json();
+    })
+    .then(maturityAmount => {
+        // Show result
+        document.getElementById('maturityAmountResult').textContent = formatCurrency(maturityAmount);
+        document.getElementById('calculatorResult').classList.remove('hidden');
+    })
+    .catch(error => {
+        alert("❌ Error: " + error.message);
+    });
 }
 
 // Close modal when clicking outside

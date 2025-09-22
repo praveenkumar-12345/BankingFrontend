@@ -1,3 +1,5 @@
+// recurringdeposit.js
+
 const recurringDeposits = [
     {
         "rdId": 901,
@@ -30,6 +32,7 @@ let currentrdId = null;
 let currentPayRdId = null;
 let registrationEntryDate = null;
 let rdIdCounter = 903;
+let authToken = null;
 
 function toggleRegisterForm() {
     const form = document.getElementById('registerForm');
@@ -62,11 +65,10 @@ function clearErrors() {
     document.getElementById("tenureError").textContent = "";
 }
 
-let authToken = null; // store JWT token here
-
 function loginUser() {
+    // This function should ideally open a login form for the user to enter credentials.
+    // For now, we will use the same hardcoded credentials for demonstration purposes.
     const loginData = {
-        fullname: "Praveen",
         email: "praveen.kumar@gmail.com",
         password: "securePassword123"
     };
@@ -81,9 +83,9 @@ function loginUser() {
         return res.json();
     })
     .then(data => {
-        authToken = data.token; // save token
+        authToken = data.token;
         console.log("✅ Logged in. Token:", authToken);
-        alert("Login successful! Now you can register FD.");
+        alert("Login successful! Now you can register RD.");
     })
     .catch(err => {
         console.error("❌ Login error:", err);
@@ -93,6 +95,10 @@ function loginUser() {
 
 function submitRegistration() {
     clearErrors();
+    if (!authToken) {
+        alert("Please login first!");
+        return;
+    }
     const accountId = document.getElementById('accountId').value;
     const monthlyAmount = parseFloat(document.getElementById('monthlyAmount').value);
     const interestRate = parseFloat(document.getElementById('interestRate').value);
@@ -114,7 +120,6 @@ function submitRegistration() {
     }
     if (!isValid) return;
 
-    // Prepare request object (backend expects RecurringDeposit JSON)
     const newRd = {
         account: { accountId: parseInt(accountId) },
         monthlyInstallment: monthlyAmount,
@@ -123,7 +128,6 @@ function submitRegistration() {
         tenureMonths: tenureMonths
     };
 
-    // Send request to backend
     fetch("http://localhost:8080/users/RecurringDeposit/add", {
         method: "POST",
         headers: {
@@ -176,13 +180,11 @@ function showAllRecurringDeposits() {
 
 
     const entryDate = document.getElementById('entryDate').value;
-    console.log("entrydate=", entryDate);
     if (!entryDate) {
         alert("Please select a date first!");
         return;
     }
 
-    // Make request to Spring Boot backend
     fetch(`http://localhost:8080/users/RecurringDeposit/showall?date=${entryDate}`, {
         method: "GET",
         headers: {
@@ -201,7 +203,7 @@ function showAllRecurringDeposits() {
                 rdItem.setAttribute('data-rd-index', index);
 
                 const minDate = entryDate || fd.startDate;
-        
+
                 rdItem.innerHTML = `
                     <div class="rd-header">
                         <div class="rd-id">RD ID: ${rd.rdId}</div>
@@ -248,7 +250,7 @@ function showAllRecurringDeposits() {
                     <div class="rd-actions">
                         <input type="date" class="calendar-input" min="${minDate}" placeholder="Select date">
                         <button class="Pay-btn" onclick="openPayModal(${rd.rdId}, ${index})">Pay</button>
-                        <button class="withdraw-btn" onclick="initiateWithdrawal(${rd.rdId}, ${rd.maturityAmount}, ${index})">Withdraw</button>
+                        ${rd.status !== 'PREMATURE_CLOSURE' ? `<button class="withdraw-btn" onclick="initiateWithdrawal(${rd.rdId}, ${rd.maturityAmount}, ${index})">Withdraw</button>` : ''}
                     </div>
                 `;
                 rdList.appendChild(rdItem);
@@ -263,7 +265,7 @@ function showAllRecurringDeposits() {
 function openPayModal(rdId, index) {
     const rdItems = document.querySelectorAll('.calendar-input');
     const selectedDate = rdItems[index].value;
-    
+
     if (!selectedDate) {
         alert('Please select a date first');
         return;
@@ -274,7 +276,7 @@ function openPayModal(rdId, index) {
     document.getElementById('PayDate').value = selectedDate;
     document.getElementById('PayInstallmentAmount').value = '';
     document.getElementById('PayModal').style.display = 'flex';
-    PayModal.setAttribute('data-rd-index', index);
+    document.getElementById('PayModal').setAttribute('data-rd-index', index);
 }
 
 function closePayModal() {
@@ -284,22 +286,21 @@ function closePayModal() {
 
 function confirmPayment() {
     const installmentAmount = parseFloat(document.getElementById('PayInstallmentAmount').value);
-    const modal=document.getElementById('PayModal');
-    const rdIndex = modal.getAttribute('data-rd-index');
-    console.log(installmentAmount);
-    if (!installmentAmount || installmentAmount <= 0) {
+
+    if (isNaN(installmentAmount) || installmentAmount <= 0) {
         alert('Please enter a valid installment amount');
         return;
     }
 
     const rdId = parseInt(document.getElementById('PayRdId').value);
     const paymentDate = document.getElementById('PayDate').value;
+    const modal = document.getElementById('PayModal');
+    const rdIndex = modal.getAttribute('data-rd-index');
 
-    // Call backend
     const url = `http://localhost:8080/users/RecurringDeposit/pay?rdId=${rdId}&amount=${installmentAmount}&paymentDate=${paymentDate}`;
 
-    fetch(url, { 
-        method: "POST", 
+    fetch(url, {
+        method: "POST",
         headers: {
             "Content-Type": "application/json",
             "Authorization": "Bearer " + authToken
@@ -307,36 +308,29 @@ function confirmPayment() {
     })
         .then(response => {
             if (!response.ok) {
-                throw new Error("Payment failed");
+                return response.text().then(text => { throw new Error(text || "Payment failed") });
             }
-            return response.text();  // backend returns String message
+            return response.text();
         })
         .then(message => {
             closePayModal();
-            // Refresh RD list if visible
-            showAllRecurringDeposits();
-            // Find RD item container
-            setTimeout(() => {
+            showAllRecurringDeposits().then(() => {
                 const rdItem = document.querySelector(`.rd-item[data-rd-index="${rdIndex}"]`);
-                // const rdItem = document.querySelector(`[data-rd-id="${rdId}"]`);
                 if (rdItem) {
-                    // Remove old message if exists
                     const existingMessage = rdItem.querySelector('.success-message');
                     if (existingMessage) existingMessage.remove();
 
-                    // Add new backend message
                     const successDiv = document.createElement('div');
                     successDiv.className = 'success-message';
                     successDiv.textContent = message;
                     successDiv.style.marginBottom = '15px';
                     rdItem.insertBefore(successDiv, rdItem.firstChild);
 
-                    // Auto-hide after 3s
                     setTimeout(() => {
                         if (successDiv.parentNode) successDiv.remove();
-                    }, 8000); 
+                    }, 8000);
                 }
-            }, 200);
+            });
         })
         .catch(error => {
             alert("❌ Error: " + error.message);
@@ -349,7 +343,6 @@ function initiateWithdrawal(rdId, amount, rdIndex) {
     const rdItem = document.querySelector(`.rd-item[data-rd-index='${rdIndex}']`);
     const rdItems = document.querySelectorAll('.calendar-input');
     const selectedDate = rdItems[rdIndex].value;
-    console.log(selectedDate);    
     if (!selectedDate) {
         alert('Please select a date first');
         return;
@@ -362,20 +355,18 @@ function initiateWithdrawal(rdId, amount, rdIndex) {
         }
     }).then(response => {
             if (!response.ok) throw new Error("Network response was not ok");
-            return response.text(); // backend returns plain text message
+            return response.text();
         })
         .then(message => {
             currentrdId = rdId;
             currentWithdrawDate = selectedDate;
 
-            // Show modal and set message
             const modalOverlay = document.getElementById('modalOverlay');
             const modalMessage = document.getElementById('modalMessage');
 
-            modalMessage.textContent = message; // Set the response message
-            modalOverlay.style.display = 'flex'; // Show modal
-             // Add this
-             modalOverlay.setAttribute('data-rd-index', rdIndex);
+            modalMessage.textContent = message;
+            modalOverlay.style.display = 'flex';
+            modalOverlay.setAttribute('data-rd-index', rdIndex);
         })
         .catch(error => {
             console.error('Error:', error);
@@ -392,19 +383,14 @@ function confirmWithdrawal() {
         alert("Invalid withdrawal data!");
         return;
     }
-    
+
     fetch(`http://localhost:8080/users/RecurringDeposit/withdraw?rdId=${currentrdId}&date=${currentWithdrawDate}`, {
         method: "POST",
         headers: { "Authorization": "Bearer " + authToken }
     })
     .then(res => res.text())
     .then(message => {
-        // Extract credited amount from backend messag
-
-        // Refresh FD list from backend to update status
-        showAllRecurringDeposits();
-        // Wait a bit for FD list to render, then show success message
-        setTimeout(() => {
+        showAllRecurringDeposits().then(() => {
             const rdItem = document.querySelector(`.rd-item[data-rd-index="${rdIndex}"]`);
             if (rdItem) {
                 const existingMessage = rdItem.querySelector('.success-message');
@@ -421,7 +407,7 @@ function confirmWithdrawal() {
                     if (successDiv.parentNode) successDiv.remove();
                 }, 10000);
             }
-        }, 200);
+        });
     })
     .catch(err => {
         console.error(err);
@@ -431,7 +417,7 @@ function confirmWithdrawal() {
 
 function cancelWithdrawal() {
     document.getElementById('modalOverlay').style.display = 'none';
-    currentRdId = null;
+    currentrdId = null;
     currentWithdrawAmount = 0;
 }
 
@@ -453,10 +439,6 @@ function calculateMaturity() {
     const interestRate = parseFloat(document.getElementById('calcInterestRate').value);
     const tenure = parseInt(document.getElementById('calcTenure').value);
 
-    if (!monthlyAmount || !interestRate || !tenure) {
-        alert('Please fill all fields');
-        return;
-    }
     if (isNaN(monthlyAmount) || monthlyAmount <= 0) {
         alert('Please enter a valid monthly amount');
         return;
@@ -470,7 +452,6 @@ function calculateMaturity() {
         return;
     }
 
-    // Call backend API
     fetch(`http://localhost:8080/users/RecurringDeposit/calculatematurity?depositAmount=${monthlyAmount}&interestRate=${interestRate}&tenureMonths=${tenure}`, {
         method: "GET",
         headers: {
@@ -503,7 +484,6 @@ function updateCalendarConstraints() {
     });
 }
 
-// Close modals when clicking outside
 document.getElementById('modalOverlay').addEventListener('click', function(e) {
     if (e.target === this) cancelWithdrawal();
 });
@@ -516,5 +496,4 @@ document.getElementById('calculatorModal').addEventListener('click', function(e)
     if (e.target === this) closeCalculator();
 });
 
-// Set current date as default for entry date
 document.getElementById('entryDate').valueAsDate = new Date();
