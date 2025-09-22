@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixed Deposit Management</title>
+    <link rel="stylesheet" href="fixeddeposit.css">
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">Fixed Deposit</h1>
+        <div class="account-info">
+            <div class="account-symbol">💰</div>
+            <div class="account-details">
+                <div class="account-id">Account ID: 700</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls-section">
+        <div class="register-container">
+            <button class="register-btn" onclick="toggleRegisterForm()">Register</button>
+        </div>
+
+        <div class="form-buttons">
+            <button type="button" class="form-btn login-btn" onclick="loginUser()">Login</button>
+        </div>
+
+        <div class="calculator-container">
+            <button class="calculator-btn" onclick="openCalculator()">Calculate Maturity Amount</button>
+        </div>
+
+            <!-- Registration Form -->
+    <div id="registerForm" class="register-form hidden">
+        <h3 style="text-align: center; margin-bottom: 25px; color: #fff; font-size: 1.5em;">
+            Register New Fixed Deposit
+        </h3>
+
+        <div class="form-row">
+            <div class="form-group"> 
+                <label class="form-label">Account ID <span class="required">*</span></label> 
+                <input type="number" class="form-input" id="accountId" value="700" readonly> 
+            </div>
+        </div>
+
+        <!-- Deposit Amount -->
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Deposit Amount (₹) <span class="required">*</span></label>
+                <input type="number" class="form-input" id="depositAmount" 
+                    placeholder="Enter amount" min="1000" max="200000" step="100" required>
+                <small class="info-text">Amount should be between ₹1,000 and ₹2,00,000</small>
+                <small class="error-text" id="depositError"></small>
+            </div>
+        </div>
+
+        <!-- Interest & Tenure -->
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Interest Rate (%) <span class="required">*</span></label>
+                <input type="number" class="form-input" id="interestRate" 
+                    placeholder="Auto-selected based on tenure" step="0.1" readonly required>
+                <small class="info-text">
+                    Interest Rate depends on tenure:<br>
+                    • 6 months → 5.5% <br>
+                    • 1 - 1.5 years → 6.8% <br>
+                    • 2 - 4.5 years → 7.2% <br>
+                    • 5 years → 7.5%
+                </small>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tenure (Months) <span class="required">*</span></label>
+                <input type="number" class="form-input" id="tenureMonths" 
+                    placeholder="Enter tenure in months" min="6" max="60" required 
+                    oninput="updateInterestRate()">
+                <small class="error-text" id="tenureError"></small>
+            </div>
+        </div>
+
+        <!-- Start Date -->
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Start Date <span class="required">*</span></label>
+                <input type="date" class="form-input" id="startDate" required>
+            </div>
+        </div>
+
+        <div class="form-buttons">
+            <button class="form-btn submit-btn" onclick="submitRegistration()">Submit Registration</button>
+            <button class="form-btn cancel-form-btn" onclick="cancelRegistration()">Cancel</button>
+        </div>
+    </div>
+
+        <div class="date-input-section">
+            <label for="entryDate" style="color: #fff; font-weight: bold;">Entering Date:</label>
+            <input type="date" id="entryDate" class="date-input" onchange="updateCalendarConstraints()">
+        </div>
+
+        <div class="show-all-container">
+            <button class="show-all-btn" onclick="showAllFixedDeposits()">Show All Fixed Deposits</button>
+        </div>
+    </div>
+
+    <div id="fdListContainer" class="fd-list-container hidden">
+        <h2 class="fd-list-title">Fixed Deposits List</h2>
+        <div id="fdList"></div>
+    </div>
+
+    <!-- Maturity Calculator Modal -->
+    <div id="calculatorModal" class="calculator-modal">
+        <div class="calculator-content">
+            <div class="calculator-title">Calculate Maturity Amount</div>
+            
+            <div class="calc-input-group">
+                <label class="calc-label">Deposit Amount (₹)</label>
+                <input type="number" class="calc-input" id="calcDepositAmount" placeholder="Enter deposit amount">
+            </div>
+            
+            <div class="calc-input-group">
+                <label class="calc-label">Interest Rate (%)</label>
+                <input type="number" class="calc-input" id="calcInterestRate" placeholder="Enter interest rate" step="0.1">
+            </div>
+            
+            <div class="calc-input-group">
+                <label class="calc-label">Tenure (Months)</label>
+                <input type="number" class="calc-input" id="calcTenure" placeholder="Enter tenure in months">
+            </div>
+            
+            <div id="calculatorResult" class="calc-result hidden">
+                <h4>Maturity Amount:</h4>
+                <div class="amount" id="maturityAmountResult">₹0</div>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="modal-btn ok-btn" onclick="calculateMaturity()">OK</button>
+                <button class="modal-btn cancel-btn" onclick="closeCalculator()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for withdrawal confirmation -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal">
+            <h3 id="modalMessage"></h3>
+            <div class="modal-buttons">
+                <button class="modal-btn ok-btn" onclick="confirmWithdrawal()">OK</button>
+                <button class="modal-btn cancel-btn" onclick="cancelWithdrawal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+     <script src="fixeddeposit.js"></script>
+</body>
+</html>
