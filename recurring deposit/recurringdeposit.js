@@ -250,7 +250,7 @@ function showAllRecurringDeposits() {
                     <div class="rd-actions">
                         <input type="date" class="calendar-input" min="${minDate}" placeholder="Select date">
                         <button class="Pay-btn" onclick="openPayModal(${rd.rdId}, ${index})">Pay</button>
-                        ${rd.status !== 'PREMATURE_CLOSURE' ? `<button class="withdraw-btn" onclick="initiateWithdrawal(${rd.rdId}, ${rd.maturityAmount}, ${index})">Withdraw</button>` : ''}
+                        ${(rd.status !== 'PREMATURE_CLOSURE') ? `<button class="withdraw-btn" onclick="initiateWithdrawal(${rd.rdId}, ${rd.maturityAmount}, ${index})">Withdraw</button>` : ''}
                     </div>
                 `;
                 rdList.appendChild(rdItem);
