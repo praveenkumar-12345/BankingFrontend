@@ -291,9 +291,9 @@ function showAllFixedDeposits() {
                             <span class="detail-value">${fd.tenureMonths} months</span>
                         </div>
                     </div>
-                    <div class="fd-actions">
-                        <input type="date" class="calendar-input" min="${minDate}" placeholder="Select withdrawal date">
-                        ${(fd.status !== 'PREMATURE_CLOSURE') ? `<button class="withdraw-btn" onclick="initiateWithdrawal(${fd.fdId}, ${fd.maturityAmount}, ${index})">Withdraw</button>` : ''}
+                    <div class="fd-actions ${fd.status === 'PREMATURE_CLOSURE' || fd.status === 'CLOSED' ? 'disabled' : ''}">
+                        <input type="date" class="calendar-input" min="${minDate}" placeholder="Select withdrawal date" ${fd.status === 'PREMATURE_CLOSURE' || fd.status === 'CLOSED' ? 'disabled' : ''}>
+                        <button class="withdraw-btn" onclick="initiateWithdrawal(${fd.fdId}, ${fd.maturityAmount}, ${index})" ${fd.status === 'PREMATURE_CLOSURE' || fd.status === 'CLOSED' ? 'disabled' : ''}>Withdraw</button>
                     </div>
                 `;
                 fdList.appendChild(fdItem);

@@ -185,7 +185,7 @@ function showAllRecurringDeposits() {
         return;
     }
 
-    fetch(`http://localhost:8080/users/RecurringDeposit/showall?date=${entryDate}`, {
+    return fetch(`http://localhost:8080/users/RecurringDeposit/showall?date=${entryDate}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -247,10 +247,10 @@ function showAllRecurringDeposits() {
                             <span class="detail-value">${formatCurrency(rd.fine)}</span>
                         </div>
                     </div>
-                    <div class="rd-actions">
-                        <input type="date" class="calendar-input" min="${minDate}" placeholder="Select date">
-                        <button class="Pay-btn" onclick="openPayModal(${rd.rdId}, ${index})">Pay</button>
-                        ${(rd.status !== 'PREMATURE_CLOSURE') ? `<button class="withdraw-btn" onclick="initiateWithdrawal(${rd.rdId}, ${rd.maturityAmount}, ${index})">Withdraw</button>` : ''}
+                    <div class="rd-actions ${rd.status === 'PREMATURE_CLOSURE' || rd.status === 'CLOSED' ? 'disabled' : ''}">
+                        <input type="date" class="calendar-input" min="${minDate}" placeholder="Select date" ${rd.status === 'PREMATURE_CLOSURE' || rd.status === 'CLOSED' ? 'disabled' : ''}>
+                        <button class="Pay-btn" onclick="openPayModal(${rd.rdId}, ${index})" ${rd.status === 'PREMATURE_CLOSURE' || rd.status === 'CLOSED' ? 'disabled' : ''}>Pay</button>
+                        <button class="withdraw-btn" onclick="initiateWithdrawal(${rd.rdId}, ${rd.maturityAmount}, ${index})" ${rd.status === 'PREMATURE_CLOSURE' || rd.status === 'CLOSED' ? 'disabled' : ''}>Withdraw</button>
                     </div>
                 `;
                 rdList.appendChild(rdItem);
