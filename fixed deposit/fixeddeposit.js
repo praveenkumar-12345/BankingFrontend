@@ -100,8 +100,8 @@ function clearErrors() {
 
 function loginUser() {
     const loginData = {
-        email: "praveen.kumar@gmail.com",
-        password: "securePassword123"
+        "custId":"Shar!17%",
+        "password": "K5&AHSROEd"
     };
 
     fetch("http://localhost:8080/auth/userlogin", {
@@ -133,6 +133,7 @@ function submitRegistration() {
         return;
     }
 
+    const userId = document.getElementById('userId').value;
     const accountId = document.getElementById('accountId').value;
     const depositAmount = parseFloat(document.getElementById('depositAmount').value);
     const interestRate = parseFloat(document.getElementById('interestRate').value);
@@ -167,7 +168,7 @@ function submitRegistration() {
         tenureMonths: tenureMonths
     };
 
-    fetch("http://localhost:8080/users/FixedDeposit/add", {
+    fetch(`http://localhost:8080/users/FixedDeposit/${userId}/add`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -175,8 +176,11 @@ function submitRegistration() {
         },
         body: JSON.stringify(fdRequest)
     })
-    .then(response => {
-        if (!response.ok) throw new Error("FD registration failed");
+    .then(async response => {
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "FD registration failed");
+        }
         return response.json();
     })
     .then(savedFd => {
@@ -194,7 +198,12 @@ function submitRegistration() {
         }
     })
     .catch(error => {
-        alert("❌ Error: " + error.message);
+                Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: error.message,
+            confirmButtonColor: '#d33'
+        });
     });
 }
 
@@ -232,7 +241,12 @@ function showAllFixedDeposits() {
 
     const entryDate = document.getElementById('entryDate').value;
     if (!entryDate) {
-        alert("Please select a date first!");
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: "Please select Today's date first!",
+            confirmButtonColor: '#d33'
+        });
         return;
     }
 
@@ -315,7 +329,12 @@ function initiateWithdrawal(fdId, maturityAmount, index) {
     const withdrawalDateInput = fdItem.querySelector('.calendar-input');
     const selectedDate = withdrawalDateInput.value;
     if (!selectedDate) {
-        alert("Please select a withdrawal date first!");
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: "Please select Today's date first!",
+            confirmButtonColor: '#d33'
+        });
         return;
     }
 

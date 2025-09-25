@@ -69,8 +69,8 @@ function loginUser() {
     // This function should ideally open a login form for the user to enter credentials.
     // For now, we will use the same hardcoded credentials for demonstration purposes.
     const loginData = {
-        email: "praveen.kumar@gmail.com",
-        password: "securePassword123"
+        "custId":"Shar!17%",
+        "password": "K5&AHSROEd"
     };
 
     fetch("http://localhost:8080/auth/userlogin", {
@@ -96,9 +96,15 @@ function loginUser() {
 function submitRegistration() {
     clearErrors();
     if (!authToken) {
-        alert("Please login first!");
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: "Please login first!",
+            confirmButtonColor: '#d33'
+        });
         return;
     }
+    const userId = document.getElementById('userId').value;
     const accountId = document.getElementById('accountId').value;
     const monthlyAmount = parseFloat(document.getElementById('monthlyAmount').value);
     const interestRate = parseFloat(document.getElementById('interestRate').value);
@@ -128,7 +134,7 @@ function submitRegistration() {
         tenureMonths: tenureMonths
     };
 
-    fetch("http://localhost:8080/users/RecurringDeposit/add", {
+    fetch(`http://localhost:8080/users/RecurringDeposit/${userId}/add`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -136,9 +142,10 @@ function submitRegistration() {
         },
         body: JSON.stringify(newRd)
     })
-    .then(response => {
+    .then(async response => {
         if (!response.ok) {
-            throw new Error("Failed to register RD");
+            const errorData = await response.json();
+            throw new Error(errorData.error || "RD registration failed");
         }
         return response.json();
     })
@@ -156,7 +163,12 @@ function submitRegistration() {
         }
     })
     .catch(error => {
-        alert("❌ Error: " + error.message);
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: error.message,
+            confirmButtonColor: '#d33'
+        });
     });
 }
 
@@ -181,7 +193,12 @@ function showAllRecurringDeposits() {
 
     const entryDate = document.getElementById('entryDate').value;
     if (!entryDate) {
-        alert("Please select a date first!");
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: "Please select Today's date first!",
+            confirmButtonColor: '#d33'
+        });
         return;
     }
 
@@ -267,7 +284,12 @@ function openPayModal(rdId, index) {
     const selectedDate = rdItems[index].value;
 
     if (!selectedDate) {
-        alert('Please select a date first');
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: "Please select Date first!",
+            confirmButtonColor: '#d33'
+        });
         return;
     }
 
@@ -288,7 +310,12 @@ function confirmPayment() {
     const installmentAmount = parseFloat(document.getElementById('PayInstallmentAmount').value);
 
     if (isNaN(installmentAmount) || installmentAmount <= 0) {
-        alert('Please enter a valid installment amount');
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: "Please enter a valid installment amount",
+            confirmButtonColor: '#d33'
+        });
         return;
     }
 
@@ -308,9 +335,9 @@ function confirmPayment() {
     })
         .then(response => {
             if (!response.ok) {
-                return response.text().then(text => { throw new Error(text || "Payment failed") });
+                throw new Error("Payment failed");
             }
-            return response.text();
+            return response.text();  // backend returns String message
         })
         .then(message => {
             closePayModal();
@@ -344,7 +371,12 @@ function initiateWithdrawal(rdId, amount, rdIndex) {
     const rdItems = document.querySelectorAll('.calendar-input');
     const selectedDate = rdItems[rdIndex].value;
     if (!selectedDate) {
-        alert('Please select a date first');
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: "Please select a date first!",
+            confirmButtonColor: '#d33'
+        });
         return;
     }
 
